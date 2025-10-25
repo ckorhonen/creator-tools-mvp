@@ -17,6 +17,63 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate Cloudflare Secrets
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "🔍 Validating Cloudflare deployment secrets..."
+          
+          MISSING_SECRETS=false
+          
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ ERROR: CLOUDFLARE_API_TOKEN secret is not configured"
+            MISSING_SECRETS=true
+          else
+            echo "✅ CLOUDFLARE_API_TOKEN is configured"
+          fi
+          
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ ERROR: CLOUDFLARE_ACCOUNT_ID secret is not configured"
+            MISSING_SECRETS=true
+          else
+            echo "✅ CLOUDFLARE_ACCOUNT_ID is configured"
+          fi
+          
+          if [ "$MISSING_SECRETS" = "true" ]; then
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔐 ACTION REQUIRED: Configure Cloudflare Secrets"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "Deployment cannot proceed without Cloudflare authentication credentials."
+            echo ""
+            echo "📖 SETUP GUIDE (10 minutes):"
+            echo "   https://github.com/ckorhonen/creator-tools-mvp/blob/main/DEPLOYMENT_SETUP.md"
+            echo ""
+            echo "⚡ QUICK SETUP:"
+            echo ""
+            echo "1. Get API Token:"
+            echo "   → https://dash.cloudflare.com/profile/api-tokens"
+            echo "   → Click 'Create Token'"
+            echo "   → Use 'Edit Cloudflare Workers' template"
+            echo ""
+            echo "2. Get Account ID:"
+            echo "   → https://dash.cloudflare.com"
+            echo "   → Find 'Account ID' in right sidebar"
+            echo ""
+            echo "3. Add secrets to GitHub:"
+            echo "   → https://github.com/ckorhonen/creator-tools-mvp/settings/secrets/actions"
+            echo "   → Add: CLOUDFLARE_API_TOKEN"
+            echo "   → Add: CLOUDFLARE_ACCOUNT_ID"
+            echo ""
+            echo "4. Re-run this workflow"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All required secrets are configured - proceeding with deployment"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -49,6 +106,7 @@ jobs:
           
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
+        id: deploy-pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -56,6 +114,15 @@ jobs:
           projectName: creator-tools-mvp
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Deployment Summary
+        if: github.event_name != 'pull_request' && steps.deploy-pages.outcome == 'success'
+        run: |
+          echo "### ✅ Frontend Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Frontend URL**: https://creator-tools-mvp.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment ID**: ${{ steps.deploy-pages.outputs.id }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ steps.deploy-pages.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
 
   deploy-workers:
     runs-on: ubuntu-latest
@@ -66,6 +133,63 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Cloudflare Secrets
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "🔍 Validating Cloudflare deployment secrets..."
+          
+          MISSING_SECRETS=false
+          
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ ERROR: CLOUDFLARE_API_TOKEN secret is not configured"
+            MISSING_SECRETS=true
+          else
+            echo "✅ CLOUDFLARE_API_TOKEN is configured"
+          fi
+          
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ ERROR: CLOUDFLARE_ACCOUNT_ID secret is not configured"
+            MISSING_SECRETS=true
+          else
+            echo "✅ CLOUDFLARE_ACCOUNT_ID is configured"
+          fi
+          
+          if [ "$MISSING_SECRETS" = "true" ]; then
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔐 ACTION REQUIRED: Configure Cloudflare Secrets"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "Deployment cannot proceed without Cloudflare authentication credentials."
+            echo ""
+            echo "📖 SETUP GUIDE (10 minutes):"
+            echo "   https://github.com/ckorhonen/creator-tools-mvp/blob/main/DEPLOYMENT_SETUP.md"
+            echo ""
+            echo "⚡ QUICK SETUP:"
+            echo ""
+            echo "1. Get API Token:"
+            echo "   → https://dash.cloudflare.com/profile/api-tokens"
+            echo "   → Click 'Create Token'"
+            echo "   → Use 'Edit Cloudflare Workers' template"
+            echo ""
+            echo "2. Get Account ID:"
+            echo "   → https://dash.cloudflare.com"
+            echo "   → Find 'Account ID' in right sidebar"
+            echo ""
+            echo "3. Add secrets to GitHub:"
+            echo "   → https://github.com/ckorhonen/creator-tools-mvp/settings/secrets/actions"
+            echo "   → Add: CLOUDFLARE_API_TOKEN"
+            echo "   → Add: CLOUDFLARE_ACCOUNT_ID"
+            echo ""
+            echo "4. Re-run this workflow"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All required secrets are configured - proceeding with deployment"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -89,8 +213,19 @@ jobs:
 
       - name: Deploy to Cloudflare Workers
         if: github.event_name != 'pull_request'
+        id: deploy-workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/api
+      
+      - name: Deployment Summary
+        if: github.event_name != 'pull_request' && steps.deploy-workers.outcome == 'success'
+        run: |
+          echo "### ✅ Workers API Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**API URL**: https://creator-tools-api.ckorhonen.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Health Check**: https://creator-tools-api.ckorhonen.workers.dev/health" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "ℹ️ **Note**: Database endpoints will return 503 until D1 database is configured" >> $GITHUB_STEP_SUMMARY
