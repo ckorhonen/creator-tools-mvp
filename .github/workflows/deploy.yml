@@ -21,15 +21,37 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # No cache configuration for root - package-lock.json not tracked
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Verify package files
+        run: |
+          echo "📦 Checking package configuration..."
+          ls -la package*.json
+          echo ""
+          echo "📋 Package.json contents:"
+          cat package.json
 
       - name: Install dependencies
         run: |
-          # Use npm install since package-lock.json might not be committed
-          npm install
-        
-      - name: Build
-        run: npm run build
+          echo "📥 Installing dependencies..."
+          if [ -f package-lock.json ]; then
+            echo "Using npm ci for locked dependencies"
+            npm ci
+          else
+            echo "Using npm install (no lock file)"
+            npm install
+          fi
+
+      - name: Verify dependencies
+        run: |
+          echo "✅ Checking installed dependencies..."
+          npm list --depth=0 || echo "⚠️  Some dependencies may have issues"
+
+      - name: Build frontend
+        run: |
+          echo "🏗️  Building frontend..."
+          npm run build
         env:
           # Use secrets with fallback to default values for initial deployment
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://creator-tools-api.ckorhonen.workers.dev' }}
@@ -39,9 +61,18 @@ jobs:
 
       - name: Verify build output
         run: |
-          echo "Checking dist directory..."
-          ls -la dist/ || echo "⚠️  dist directory not found"
-          
+          echo "📁 Checking build output..."
+          if [ -d "dist" ]; then
+            echo "✅ dist directory exists"
+            ls -lah dist/
+            echo ""
+            echo "📊 Build size:"
+            du -sh dist/
+          else
+            echo "❌ dist directory not found!"
+            exit 1
+          fi
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
@@ -65,17 +96,46 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # Enable cache for Workers API which has package-lock.json
           cache: 'npm'
           cache-dependency-path: 'workers/api/package-lock.json'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Verify wrangler.toml
+      - name: Verify Workers configuration
         run: |
-          echo "Checking wrangler.toml configuration..."
+          echo "📦 Checking Workers API configuration..."
+          ls -la
+          echo ""
+          echo "📋 Package.json:"
+          cat package.json
+          echo ""
+          echo "⚙️  Wrangler.toml:"
           cat wrangler.toml
+
+      - name: Install dependencies
+        run: |
+          echo "📥 Installing Workers dependencies..."
+          if [ -f package-lock.json ]; then
+            echo "Using npm ci for locked dependencies"
+            npm ci
+          else
+            echo "Using npm install (no lock file)"
+            npm install
+          fi
+
+      - name: Verify dependencies
+        run: |
+          echo "✅ Checking installed dependencies..."
+          npm list --depth=0 || echo "⚠️  Some dependencies may have issues"
+
+      - name: Verify TypeScript source
+        run: |
+          echo "📝 Checking TypeScript source..."
+          if [ -f "src/index.ts" ]; then
+            echo "✅ src/index.ts exists"
+            wc -l src/index.ts
+          else
+            echo "❌ src/index.ts not found!"
+            exit 1
+          fi
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
