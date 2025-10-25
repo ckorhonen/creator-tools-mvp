@@ -22,15 +22,51 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Clean incomplete package-lock.json
+        run: |
+          echo "Checking for incomplete package-lock.json..."
+          if [ -f package-lock.json ]; then
+            SIZE=$(wc -c < package-lock.json)
+            if [ "$SIZE" -lt 10000 ]; then
+              echo "⚠️  Detected incomplete package-lock.json (${SIZE} bytes). Removing for fresh install."
+              rm package-lock.json
+            else
+              echo "✅ package-lock.json appears complete (${SIZE} bytes)"
+            fi
+          else
+            echo "ℹ️  No package-lock.json found (will be generated)"
+          fi
+          
       - name: Install dependencies
         run: |
           echo "Installing frontend dependencies..."
           npm install
+          echo "✅ Dependencies installed successfully"
+        
+      - name: Verify dependencies
+        run: |
+          echo "Verifying critical dependencies..."
+          if ! npm list react > /dev/null 2>&1; then
+            echo "❌ React not installed properly"
+            exit 1
+          fi
+          if ! npm list vite > /dev/null 2>&1; then
+            echo "❌ Vite not installed properly"
+            exit 1
+          fi
+          echo "✅ Critical dependencies verified"
+
+      - name: Type check
+        run: |
+          echo "Running TypeScript type check..."
+          npm run type-check
+          echo "✅ Type check passed"
         
       - name: Build
         run: |
           echo "Building frontend..."
           npm run build
+          echo "✅ Build completed"
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://creator-tools-api.ckorhonen.workers.dev' }}
           VITE_TWITTER_CLIENT_ID: ${{ secrets.VITE_TWITTER_CLIENT_ID || '' }}
@@ -44,6 +80,11 @@ jobs:
             echo "❌ Error: dist directory not found after build"
             exit 1
           fi
+          if [ ! -f "dist/index.html" ]; then
+            echo "❌ Error: dist/index.html not found"
+            exit 1
+          fi
+          echo "Dist directory contents:"
           ls -la dist/
           echo "✅ Build output verified"
           
@@ -72,10 +113,35 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Clean incomplete package-lock.json
+        run: |
+          echo "Checking for incomplete package-lock.json..."
+          if [ -f package-lock.json ]; then
+            SIZE=$(wc -c < package-lock.json)
+            if [ "$SIZE" -lt 5000 ]; then
+              echo "⚠️  Detected incomplete package-lock.json (${SIZE} bytes). Removing for fresh install."
+              rm package-lock.json
+            else
+              echo "✅ package-lock.json appears complete (${SIZE} bytes)"
+            fi
+          else
+            echo "ℹ️  No package-lock.json found (will be generated)"
+          fi
+
       - name: Install dependencies
         run: |
           echo "Installing Workers API dependencies..."
           npm install
+          echo "✅ Dependencies installed successfully"
+
+      - name: Verify wrangler installation
+        run: |
+          echo "Verifying wrangler is installed..."
+          if ! npx wrangler --version; then
+            echo "❌ Wrangler not installed properly"
+            exit 1
+          fi
+          echo "✅ Wrangler verified"
 
       - name: Verify wrangler.toml
         run: |
@@ -84,8 +150,18 @@ jobs:
             echo "❌ Error: wrangler.toml not found"
             exit 1
           fi
+          echo "wrangler.toml contents:"
           cat wrangler.toml
-          echo "✅ wrangler.toml found"
+          echo "✅ wrangler.toml found and valid"
+
+      - name: Verify source files
+        run: |
+          echo "Checking required source files..."
+          if [ ! -f "src/index.ts" ]; then
+            echo "❌ Error: src/index.ts not found"
+            exit 1
+          fi
+          echo "✅ Source files verified"
 
       - name: Deploy to Cloudflare Workers
         if: github.event_name != 'pull_request'
