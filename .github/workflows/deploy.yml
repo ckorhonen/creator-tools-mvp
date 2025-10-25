@@ -21,11 +21,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+
+      - name: Clear npm cache on failure
+        if: failure()
+        run: npm cache clean --force
 
       - name: Install dependencies
         run: |
           echo "Installing frontend dependencies..."
-          npm install
+          if [ -f "package-lock.json" ]; then
+            echo "Using npm ci with lockfile..."
+            npm ci
+          else
+            echo "No lockfile found, using npm install..."
+            npm install
+          fi
+          echo "Dependencies installed successfully"
         
       - name: Build
         run: |
@@ -71,11 +83,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'workers/api/package-lock.json'
+
+      - name: Clear npm cache on failure
+        if: failure()
+        run: npm cache clean --force
 
       - name: Install dependencies
         run: |
           echo "Installing Workers API dependencies..."
-          npm install
+          if [ -f "package-lock.json" ]; then
+            echo "Using npm ci with lockfile..."
+            npm ci
+          else
+            echo "No lockfile found, using npm install..."
+            npm install
+            echo "Generating lockfile for future builds..."
+            git diff package-lock.json || true
+          fi
+          echo "Dependencies installed successfully"
 
       - name: Verify wrangler.toml
         run: |
