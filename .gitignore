@@ -27,3 +27,21 @@ dist-ssr
 .env
 .env.local
 .env.production
+.env.development
+
+# Cloudflare
+.wrangler
+.dev.vars
+
+# Build artifacts
+build
+.cache
+
+# Testing
+coverage
+*.test.ts.snap
+
+# Temporary files
+*.tmp
+*.temp
+.temp

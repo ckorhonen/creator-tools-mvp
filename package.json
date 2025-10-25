@@ -1,7 +1,7 @@
 {
   "name": "creator-tools-mvp",
-  "version": "0.1.0",
-  "description": "MVP for creator tools focusing on content scheduling and analytics for Whop creators",
+  "version": "0.2.0",
+  "description": "Minimal but polished content scheduling MVP for Twitter/X, LinkedIn, and Instagram with unified analytics",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,24 +13,21 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@whop-apps/sdk": "^0.1.0",
-    "axios": "^1.6.0",
-    "date-fns": "^3.0.0",
-    "react-router-dom": "^6.20.0"
+    "date-fns": "^3.2.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.43",
-    "@types/react-dom": "^18.2.17",
-    "@typescript-eslint/eslint-plugin": "^6.14.0",
-    "@typescript-eslint/parser": "^6.14.0",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "autoprefixer": "^10.4.16",
-    "eslint": "^8.55.0",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "postcss": "^8.4.32",
-    "tailwindcss": "^3.3.6",
-    "typescript": "^5.2.2",
-    "vite": "^5.0.8"
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
   }
 }
