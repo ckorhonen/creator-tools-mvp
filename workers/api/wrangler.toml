@@ -1,0 +1,30 @@
+name = "creator-tools-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-15"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "creator_tools_db"
+database_id = "" # Will be filled after running: wrangler d1 create creator_tools_db
+
+# Environment variables (use wrangler secret put for sensitive values)
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets (set with: wrangler secret put <KEY>)
+# TWITTER_API_KEY
+# TWITTER_API_SECRET
+# LINKEDIN_CLIENT_ID
+# LINKEDIN_CLIENT_SECRET
+# INSTAGRAM_APP_ID
+# INSTAGRAM_APP_SECRET
+
+# Cron trigger for publishing scheduled posts
+[triggers]
+crons = ["*/5 * * * *"] # Every 5 minutes
+
+# Routes
+[route]
+pattern = "api.creator-tools.com/*"
+zone_name = "creator-tools.com"
