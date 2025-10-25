@@ -21,19 +21,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          # NO CACHE - package-lock.json doesn't exist at root
 
-      - name: Install dependencies
+      - name: Clean and install dependencies
         run: |
-          echo "Installing frontend dependencies..."
-          # Remove any existing lock file that might be corrupted
+          echo "🧹 Cleaning any existing lock files..."
           rm -f package-lock.json
-          # Use npm install to generate fresh lock file
+          echo "📦 Installing frontend dependencies..."
           npm install
+          echo "✅ Dependencies installed successfully"
         
+      - name: Verify installation
+        run: |
+          echo "🔍 Verifying node_modules..."
+          if [ ! -d "node_modules" ]; then
+            echo "❌ Error: node_modules directory not found"
+            exit 1
+          fi
+          echo "✅ node_modules exists"
+          ls -la node_modules/ | head -20
+          
       - name: Build
         run: |
-          echo "Building frontend..."
+          echo "🏗️ Building frontend..."
           npm run build
+          echo "✅ Build completed"
         env:
           # Use secrets with fallback to default values for initial deployment
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://creator-tools-api.ckorhonen.workers.dev' }}
@@ -43,13 +55,14 @@ jobs:
 
       - name: Verify build output
         run: |
-          echo "Checking dist directory..."
+          echo "📂 Checking dist directory..."
           if [ ! -d "dist" ]; then
             echo "❌ Error: dist directory not found after build"
             exit 1
           fi
-          ls -la dist/
-          echo "✅ Build output verified"
+          echo "✅ Build output verified:"
+          ls -lah dist/
+          du -sh dist/
           
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
@@ -75,24 +88,49 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          # NO CACHE - package-lock.json may be corrupted
 
-      - name: Install dependencies
+      - name: Clean and install dependencies
         run: |
-          echo "Installing Workers API dependencies..."
-          # Remove any existing corrupted lock file
+          echo "🧹 Cleaning any existing lock files..."
           rm -f package-lock.json
-          # Use npm install to generate fresh dependencies
+          echo "📦 Installing Workers API dependencies..."
           npm install
+          echo "✅ Dependencies installed successfully"
+
+      - name: Verify installation
+        run: |
+          echo "🔍 Verifying node_modules..."
+          if [ ! -d "node_modules" ]; then
+            echo "❌ Error: node_modules directory not found"
+            exit 1
+          fi
+          echo "✅ node_modules exists"
+          
+          echo "🔍 Checking for wrangler..."
+          if [ ! -f "node_modules/.bin/wrangler" ]; then
+            echo "⚠️ Warning: wrangler not found in node_modules"
+          else
+            echo "✅ wrangler found"
+          fi
 
       - name: Verify wrangler.toml
         run: |
-          echo "Checking wrangler.toml configuration..."
+          echo "📋 Checking wrangler.toml configuration..."
           if [ ! -f "wrangler.toml" ]; then
             echo "❌ Error: wrangler.toml not found"
             exit 1
           fi
+          echo "✅ wrangler.toml found:"
           cat wrangler.toml
-          echo "✅ wrangler.toml found"
+          echo ""
+          
+          echo "📋 Checking TypeScript source..."
+          if [ ! -f "src/index.ts" ]; then
+            echo "❌ Error: src/index.ts not found"
+            exit 1
+          fi
+          echo "✅ src/index.ts exists"
 
       - name: Deploy to Cloudflare Workers
         if: github.event_name != 'pull_request'
