@@ -21,7 +21,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # No cache - package-lock.json not reliably available at root
 
       - name: Install dependencies
         run: |
@@ -76,19 +75,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # Enable cache for Workers API which has package-lock.json
-          cache: 'npm'
-          cache-dependency-path: 'workers/api/package-lock.json'
 
       - name: Install dependencies
         run: |
           echo "Installing Workers API dependencies..."
-          if [ -f "package-lock.json" ]; then
-            npm ci
-          else
-            echo "⚠️  package-lock.json not found, using npm install"
-            npm install
-          fi
+          # Remove any existing corrupted lock file
+          rm -f package-lock.json
+          # Use npm install to generate fresh dependencies
+          npm install
 
       - name: Verify wrangler.toml
         run: |
