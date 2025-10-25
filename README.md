@@ -1,6 +1,6 @@
 # Creator Tools MVP
 
-> **⚠️ Deployment Notice:** GitHub Actions workflow has been fixed! See [DEPLOYMENT_FIX.md](./DEPLOYMENT_FIX.md) for configuration steps.
+> **✅ DEPLOYMENT FIXED!** The GitHub Actions workflow is now ready to deploy. See [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md) for 5-minute setup instructions.
 
 A minimal but polished content scheduling MVP for Twitter/X, LinkedIn, and Instagram with unified analytics. Built with React, TypeScript, and Cloudflare Workers.
 
@@ -19,17 +19,19 @@ A minimal but polished content scheduling MVP for Twitter/X, LinkedIn, and Insta
 
 ## 🚀 Quick Start
 
-See [QUICKSTART.md](./QUICKSTART.md) for rapid setup instructions.
+**New to this project?** Start here:
+
+1. **[DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md)** ⭐ - Deploy in 5 minutes
+2. **[QUICKSTART.md](./QUICKSTART.md)** - Development setup guide
 
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
-| [DEPLOYMENT_FIX.md](./DEPLOYMENT_FIX.md) | **START HERE** - Fix deployment issues and configuration |
+| [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md) | **START HERE** - Deploy with minimal configuration (5 min) |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Complete deployment guide for Cloudflare |
-| [DEPLOYMENT_ANALYSIS.md](./DEPLOYMENT_ANALYSIS.md) | Technical analysis of deployment fixes |
 | [FEATURES.md](./FEATURES.md) | Detailed feature documentation |
-| [QUICKSTART.md](./QUICKSTART.md) | Quick setup guide |
+| [QUICKSTART.md](./QUICKSTART.md) | Local development setup |
 | [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) | Project overview and architecture |
 | [SCREENSHOTS.md](./SCREENSHOTS.md) | Visual guide with screenshots |
 
@@ -60,7 +62,7 @@ creator-tools-mvp/
 
 ### Backend
 - **Cloudflare Workers** - Serverless API
-- **Cloudflare D1** - SQLite database
+- **Cloudflare D1** - SQLite database (optional)
 - **TypeScript** - Type safety
 
 ### Infrastructure
@@ -99,17 +101,25 @@ Visit `http://localhost:5173` to see the app.
 
 ## 🚢 Deployment
 
-**Important:** Before deploying, review [DEPLOYMENT_FIX.md](./DEPLOYMENT_FIX.md) for required configuration steps.
+### GitHub Actions (Recommended)
 
-### Quick Deploy
+The easiest way to deploy is via GitHub Actions:
 
-```bash
-# 1. Configure GitHub Secrets (see DEPLOYMENT_FIX.md)
-# 2. Push to main branch
-git push origin main
+1. **Configure Secrets** (2 minutes)
+   - Go to: Settings → Secrets and variables → Actions
+   - Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+   - See [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md) for details
 
-# GitHub Actions will automatically deploy to Cloudflare
-```
+2. **Push to Deploy** (automatic)
+   ```bash
+   git push origin main
+   ```
+   
+   Or manually trigger: Actions → Deploy to Cloudflare → Run workflow
+
+3. **Access Your App**
+   - Frontend: `https://creator-tools-mvp.pages.dev`
+   - API: `https://creator-tools-api.ckorhonen.workers.dev`
 
 ### Manual Deploy
 
@@ -130,10 +140,17 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for comprehensive deployment instructions.
 
 ## 🔧 Configuration
 
-### Environment Variables
+### Minimal Configuration (Required)
 
-Create `.env` file in the root directory:
+Only these two secrets are required for deployment:
+- `CLOUDFLARE_API_TOKEN` - From Cloudflare Dashboard
+- `CLOUDFLARE_ACCOUNT_ID` - From Cloudflare Dashboard
 
+### Optional Configuration
+
+Add these for full functionality:
+
+**Environment Variables** (`.env`):
 ```bash
 VITE_API_URL=https://your-worker-url.workers.dev
 VITE_TWITTER_CLIENT_ID=your_twitter_client_id
@@ -141,10 +158,7 @@ VITE_LINKEDIN_CLIENT_ID=your_linkedin_client_id
 VITE_INSTAGRAM_APP_ID=your_instagram_app_id
 ```
 
-### Worker Secrets
-
-Set secrets via Wrangler CLI:
-
+**Worker Secrets** (via Wrangler CLI):
 ```bash
 cd workers/api
 npx wrangler secret put TWITTER_API_KEY
@@ -155,40 +169,9 @@ npx wrangler secret put INSTAGRAM_APP_ID
 npx wrangler secret put INSTAGRAM_APP_SECRET
 ```
 
-## 📊 Database
+## 📊 Database (Optional)
 
-The app uses Cloudflare D1 (SQLite) for data storage.
-
-### Schema
-
-```sql
--- Posts table
-CREATE TABLE posts (
-  id TEXT PRIMARY KEY,
-  content TEXT NOT NULL,
-  platforms TEXT NOT NULL,
-  status TEXT NOT NULL,
-  scheduledTime DATETIME,
-  publishedTime DATETIME,
-  adaptedContent TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Analytics table
-CREATE TABLE analytics (
-  id TEXT PRIMARY KEY,
-  postId TEXT NOT NULL,
-  platform TEXT NOT NULL,
-  views INTEGER DEFAULT 0,
-  likes INTEGER DEFAULT 0,
-  shares INTEGER DEFAULT 0,
-  comments INTEGER DEFAULT 0,
-  updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (postId) REFERENCES posts(id)
-);
-```
-
-### Database Setup
+The app works without a database, but to enable post scheduling and analytics:
 
 ```bash
 cd workers/api
@@ -196,9 +179,13 @@ cd workers/api
 # Create database
 npx wrangler d1 create creator_tools_db
 
+# Update workers/api/wrangler.toml with database_id
+
 # Initialize schema
 npx wrangler d1 execute creator_tools_db --file=./schema.sql
 ```
+
+See [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md) for detailed instructions.
 
 ## 🧪 Testing
 
@@ -236,7 +223,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🐛 Issues & Support
 
-- **Deployment Issues?** See [DEPLOYMENT_FIX.md](./DEPLOYMENT_FIX.md)
+- **Deployment Issues?** See [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md)
 - **Bug Reports:** [Open an issue](https://github.com/ckorhonen/creator-tools-mvp/issues)
 - **Questions:** [Start a discussion](https://github.com/ckorhonen/creator-tools-mvp/discussions)
 
@@ -256,6 +243,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Unified analytics dashboard
 - [x] Automatic content adaptation
 - [x] Cloudflare Workers deployment
+- [x] GitHub Actions CI/CD
 - [ ] User authentication
 - [ ] Team collaboration features
 - [ ] Advanced analytics & insights
