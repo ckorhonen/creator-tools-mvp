@@ -23,6 +23,32 @@ jobs:
           node-version: '20'
           # NO CACHE - package-lock.json doesn't exist at root
 
+      - name: Validate Cloudflare Secrets
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "🔍 Validating Cloudflare secrets..."
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ ERROR: CLOUDFLARE_API_TOKEN secret is not set"
+            echo ""
+            echo "To fix this:"
+            echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "2. Click 'New repository secret'"
+            echo "3. Name: CLOUDFLARE_API_TOKEN"
+            echo "4. Value: Your Cloudflare API token"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ ERROR: CLOUDFLARE_ACCOUNT_ID secret is not set"
+            echo ""
+            echo "To fix this:"
+            echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "2. Click 'New repository secret'"
+            echo "3. Name: CLOUDFLARE_ACCOUNT_ID"
+            echo "4. Value: Your Cloudflare Account ID"
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+
       - name: Clean and install dependencies
         run: |
           echo "🧹 Cleaning any existing lock files..."
@@ -40,6 +66,16 @@ jobs:
           fi
           echo "✅ node_modules exists"
           ls -la node_modules/ | head -20
+
+      - name: Type Check
+        run: |
+          echo "🔍 Running TypeScript type check..."
+          npm run type-check || {
+            echo "❌ TypeScript type check failed"
+            echo "Run 'npm run type-check' locally to see detailed errors"
+            exit 1
+          }
+          echo "✅ Type check passed"
           
       - name: Build
         run: |
@@ -60,12 +96,17 @@ jobs:
             echo "❌ Error: dist directory not found after build"
             exit 1
           fi
+          if [ ! -f "dist/index.html" ]; then
+            echo "❌ Error: dist/index.html not found"
+            exit 1
+          fi
           echo "✅ Build output verified:"
           ls -lah dist/
           du -sh dist/
           
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
+        id: deploy-pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -73,6 +114,19 @@ jobs:
           projectName: creator-tools-mvp
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deployment Summary
+        if: github.event_name != 'pull_request' && success()
+        run: |
+          echo "## ✅ Frontend Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 Successfully deployed to Cloudflare Pages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 **Frontend URL:** https://creator-tools-mvp.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Build Info:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
 
   deploy-workers:
     runs-on: ubuntu-latest
@@ -89,6 +143,32 @@ jobs:
         with:
           node-version: '20'
           # NO CACHE - package-lock.json may be corrupted
+
+      - name: Validate Cloudflare Secrets
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "🔍 Validating Cloudflare secrets..."
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ ERROR: CLOUDFLARE_API_TOKEN secret is not set"
+            echo ""
+            echo "To fix this:"
+            echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "2. Click 'New repository secret'"
+            echo "3. Name: CLOUDFLARE_API_TOKEN"
+            echo "4. Value: Your Cloudflare API token"
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ ERROR: CLOUDFLARE_ACCOUNT_ID secret is not set"
+            echo ""
+            echo "To fix this:"
+            echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "2. Click 'New repository secret'"
+            echo "3. Name: CLOUDFLARE_ACCOUNT_ID"
+            echo "4. Value: Your Cloudflare Account ID"
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
 
       - name: Clean and install dependencies
         run: |
@@ -134,8 +214,24 @@ jobs:
 
       - name: Deploy to Cloudflare Workers
         if: github.event_name != 'pull_request'
+        id: deploy-worker
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/api
+
+      - name: Deployment Summary
+        if: github.event_name != 'pull_request' && success()
+        run: |
+          echo "## ✅ Workers API Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 Successfully deployed to Cloudflare Workers" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 **API URL:** https://creator-tools-api.ckorhonen.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Note:** Database not yet configured. See DEPLOYMENT.md for D1 setup instructions." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Build Info:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
