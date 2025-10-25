@@ -1,5 +1,15 @@
 # Deployment Guide
 
+> **⚠️ IMPORTANT: Deployment Issues Fixed!**
+> 
+> If you experienced deployment failures, see [DEPLOYMENT_FIX.md](./DEPLOYMENT_FIX.md) for:
+> - Quick fix for missing package-lock.json files (already applied)
+> - Steps to configure D1 database
+> - GitHub Actions secrets configuration
+> - Troubleshooting guide
+>
+> The workflow has been updated to handle missing lock files automatically.
+
 Complete guide for deploying Creator Tools MVP to Cloudflare.
 
 ## Prerequisites
