@@ -3,10 +3,13 @@ main = "src/index.ts"
 compatibility_date = "2024-01-15"
 
 # D1 Database
+# NOTE: Before first deployment, create the database with:
+#   wrangler d1 create creator_tools_db
+# Then replace the database_id below with the output
 [[d1_databases]]
 binding = "DB"
 database_name = "creator_tools_db"
-database_id = "" # Will be filled after running: wrangler d1 create creator_tools_db
+# database_id = "" # Uncomment and fill after creating the database
 
 # Environment variables (use wrangler secret put for sensitive values)
 [vars]
@@ -24,7 +27,7 @@ ENVIRONMENT = "production"
 [triggers]
 crons = ["*/5 * * * *"] # Every 5 minutes
 
-# Routes
-[route]
-pattern = "api.creator-tools.com/*"
-zone_name = "creator-tools.com"
+# Routes - uncomment after setting up custom domain
+# [route]
+# pattern = "api.creator-tools.com/*"
+# zone_name = "creator-tools.com"
