@@ -2,11 +2,19 @@ name = "creator-tools-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-15"
 
-# D1 Database (Optional - uncomment and configure after first deployment)
-# To set up:
-# 1. Run: wrangler d1 create creator_tools_db
-# 2. Copy the database_id from output and uncomment the lines below
-# 3. Run: wrangler d1 execute creator_tools_db --file=./schema.sql
+# ============================================
+# D1 Database Configuration (COMMENTED OUT)
+# ============================================
+# The database configuration is commented out to allow initial deployment.
+# Wrangler will reject invalid/placeholder database IDs.
+#
+# To enable database functionality after deployment:
+# 1. Create database: wrangler d1 create creator_tools_db
+# 2. Copy the database_id from the output
+# 3. Uncomment the [[d1_databases]] section below
+# 4. Replace YOUR_DATABASE_ID_HERE with the actual database ID
+# 5. Initialize schema: wrangler d1 execute creator_tools_db --file=./schema.sql --remote
+# 6. Redeploy: wrangler deploy
 # 
 # [[d1_databases]]
 # binding = "DB"
@@ -25,7 +33,9 @@ ENVIRONMENT = "production"
 # INSTAGRAM_APP_ID
 # INSTAGRAM_APP_SECRET
 
-# Cron trigger for publishing scheduled posts (optional)
+# ============================================
+# Cron Triggers (COMMENTED OUT - Requires DB)
+# ============================================
 # Uncomment after database is configured
 # [triggers]
 # crons = ["*/5 * * * *"]
