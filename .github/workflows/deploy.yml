@@ -7,11 +7,54 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Configuration
+    outputs:
+      can_deploy_frontend: ${{ steps.check.outputs.can_deploy_frontend }}
+      can_deploy_workers: ${{ steps.check.outputs.can_deploy_workers }}
+    steps:
+      - name: Check Secrets Configuration
+        id: check
+        run: |
+          echo "Checking required secrets for deployment..."
+          
+          # Check frontend deployment secrets
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "✓ Cloudflare credentials configured"
+            echo "can_deploy_frontend=true" >> $GITHUB_OUTPUT
+            echo "can_deploy_workers=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️  Cloudflare credentials not configured"
+            echo "can_deploy_frontend=false" >> $GITHUB_OUTPUT
+            echo "can_deploy_workers=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check API credentials (optional - won't block deployment)
+          if [ -z "${{ secrets.VITE_API_URL }}" ]; then
+            echo "ℹ️  VITE_API_URL not set - using default"
+          fi
+          
+          if [ -z "${{ secrets.VITE_TWITTER_CLIENT_ID }}" ]; then
+            echo "ℹ️  Twitter credentials not set - Twitter integration will be disabled"
+          fi
+          
+          if [ -z "${{ secrets.VITE_LINKEDIN_CLIENT_ID }}" ]; then
+            echo "ℹ️  LinkedIn credentials not set - LinkedIn integration will be disabled"
+          fi
+          
+          if [ -z "${{ secrets.VITE_INSTAGRAM_APP_ID }}" ]; then
+            echo "ℹ️  Instagram credentials not set - Instagram integration will be disabled"
+          fi
+
   deploy-frontend:
     runs-on: ubuntu-latest
     name: Deploy Frontend to Cloudflare Pages
+    needs: validate
+    if: needs.validate.outputs.can_deploy_frontend == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,22 +63,38 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
         run: |
+          echo "Installing frontend dependencies..."
           if [ -f package-lock.json ]; then
+            echo "Using npm ci with package-lock.json"
             npm ci
           else
+            echo "No package-lock.json found, using npm install"
             npm install
+            echo "⚠️  Consider committing package-lock.json for reproducible builds"
           fi
 
-      - name: Build
-        run: npm run build
+      - name: Build Frontend
+        run: |
+          echo "Building frontend..."
+          npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://creator-tools-api.workers.dev' }}
           VITE_TWITTER_CLIENT_ID: ${{ secrets.VITE_TWITTER_CLIENT_ID }}
           VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID }}
           VITE_INSTAGRAM_APP_ID: ${{ secrets.VITE_INSTAGRAM_APP_ID }}
+
+      - name: Verify Build Output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed: dist directory not found"
+            exit 1
+          fi
+          echo "✓ Build successful, dist directory exists"
+          ls -la dist/
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
@@ -49,9 +108,8 @@ jobs:
   deploy-workers:
     runs-on: ubuntu-latest
     name: Deploy Workers API
-    defaults:
-      run:
-        working-directory: workers/api
+    needs: validate
+    if: needs.validate.outputs.can_deploy_workers == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,12 +119,43 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies
+      - name: Verify Workers Directory
         run: |
+          if [ ! -d "workers/api" ]; then
+            echo "❌ Workers directory not found: workers/api"
+            exit 1
+          fi
+          echo "✓ Workers directory exists"
+          ls -la workers/api/
+
+      - name: Install Workers Dependencies
+        working-directory: workers/api
+        run: |
+          echo "Installing workers dependencies..."
           if [ -f package-lock.json ]; then
+            echo "Using npm ci with package-lock.json"
             npm ci
           else
+            echo "No package-lock.json found, using npm install"
             npm install
+            echo "⚠️  Consider committing package-lock.json for reproducible builds"
+          fi
+
+      - name: Validate Wrangler Configuration
+        working-directory: workers/api
+        run: |
+          if [ ! -f "wrangler.toml" ]; then
+            echo "❌ wrangler.toml not found"
+            exit 1
+          fi
+          echo "✓ wrangler.toml exists"
+          
+          # Check if database_id is set
+          if grep -q 'database_id = ""' wrangler.toml; then
+            echo "⚠️  WARNING: database_id is empty in wrangler.toml"
+            echo "⚠️  Please create a D1 database and update wrangler.toml"
+            echo "⚠️  Run: wrangler d1 create creator_tools_db"
+            echo "⚠️  Deployment will continue but may fail without a configured database"
           fi
 
       - name: Deploy to Cloudflare Workers
@@ -76,3 +165,33 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/api
           command: deploy
+
+  skip-deployment:
+    runs-on: ubuntu-latest
+    name: Deployment Skipped
+    needs: validate
+    if: needs.validate.outputs.can_deploy_frontend != 'true' || needs.validate.outputs.can_deploy_workers != 'true'
+    steps:
+      - name: Configuration Required
+        run: |
+          echo "============================================"
+          echo "⚠️  DEPLOYMENT SKIPPED"
+          echo "============================================"
+          echo ""
+          echo "Required GitHub Secrets are not configured."
+          echo ""
+          echo "To enable deployment, add these secrets in:"
+          echo "Settings → Secrets and variables → Actions"
+          echo ""
+          echo "Required secrets:"
+          echo "  - CLOUDFLARE_API_TOKEN"
+          echo "  - CLOUDFLARE_ACCOUNT_ID"
+          echo ""
+          echo "Optional secrets (for platform integrations):"
+          echo "  - VITE_API_URL"
+          echo "  - VITE_TWITTER_CLIENT_ID"
+          echo "  - VITE_LINKEDIN_CLIENT_ID"
+          echo "  - VITE_INSTAGRAM_APP_ID"
+          echo ""
+          echo "See DEPLOYMENT.md for detailed setup instructions."
+          echo "============================================"
