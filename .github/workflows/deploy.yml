@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:  # Allow manual triggers
 
 jobs:
   deploy-frontend:
@@ -20,19 +21,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        run: npm install
 
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://creator-tools-api.workers.dev' }}
+          # Use secrets with fallback to default values for initial deployment
+          VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://creator-tools-api.ckorhonen.workers.dev' }}
           VITE_TWITTER_CLIENT_ID: ${{ secrets.VITE_TWITTER_CLIENT_ID || '' }}
           VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID || '' }}
           VITE_INSTAGRAM_APP_ID: ${{ secrets.VITE_INSTAGRAM_APP_ID || '' }}
@@ -62,12 +60,7 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+        run: npm install
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
@@ -75,4 +68,3 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/api
-          command: deploy
