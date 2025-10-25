@@ -2,32 +2,34 @@ name = "creator-tools-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-15"
 
-# Environment variables
+# D1 Database (Optional - configure after first deployment)
+# To set up:
+# 1. Run: wrangler d1 create creator_tools_db
+# 2. Copy the database_id from output and paste below
+# 3. Run: wrangler d1 execute creator_tools_db --file=./schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "creator_tools_db"
+database_id = "PLACEHOLDER_CONFIGURE_AFTER_DEPLOYMENT" # Replace with actual database ID
+
+# Environment variables (use wrangler secret put for sensitive values)
 [vars]
 ENVIRONMENT = "production"
 
-# D1 Database binding (optional - configure after first deployment)
-# To set up:
-# 1. Run: wrangler d1 create creator_tools_db
-# 2. Copy the database_id from the output
-# 3. Uncomment and update the section below
-# 4. Run: wrangler d1 execute creator_tools_db --file=./schema.sql
-
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "creator_tools_db"
-# database_id = "your-database-id-here"
-
 # Secrets (set with: wrangler secret put <KEY>)
-# Required for full functionality:
-# - TWITTER_API_KEY
-# - TWITTER_API_SECRET
-# - LINKEDIN_CLIENT_ID
-# - LINKEDIN_CLIENT_SECRET
-# - INSTAGRAM_APP_ID
-# - INSTAGRAM_APP_SECRET
+# TWITTER_API_KEY
+# TWITTER_API_SECRET
+# LINKEDIN_CLIENT_ID
+# LINKEDIN_CLIENT_SECRET
+# INSTAGRAM_APP_ID
+# INSTAGRAM_APP_SECRET
 
 # Cron trigger for publishing scheduled posts
-# Commented out for initial deployment - uncomment after database setup
-# [triggers]
-# crons = ["*/5 * * * *"]
+[triggers]
+crons = ["*/5 * * * *"] # Every 5 minutes
+
+# Custom routes (Optional - configure custom domain after deployment)
+# Uncomment and configure these after setting up your custom domain in Cloudflare
+# [route]
+# pattern = "api.creator-tools.com/*"
+# zone_name = "creator-tools.com"
