@@ -21,10 +21,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # Removed cache: 'npm' since we don't have package-lock.json at root
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          # Use npm ci if lock file is valid, otherwise use npm install
+          if [ -f package-lock.json ] && npm ci --dry-run 2>/dev/null; then
+            echo "Using npm ci with valid package-lock.json"
+            npm ci
+          else
+            echo "Using npm install (package-lock.json missing or invalid)"
+            npm install
+          fi
 
       - name: Build
         run: npm run build
@@ -58,12 +65,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # Workers API has package-lock.json, so we can use cache
-          cache: 'npm'
-          cache-dependency-path: 'workers/api/package-lock.json'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          # Use npm ci if lock file is valid, otherwise use npm install
+          if [ -f package-lock.json ] && npm ci --dry-run 2>/dev/null; then
+            echo "Using npm ci with valid package-lock.json"
+            npm ci
+          else
+            echo "Using npm install (package-lock.json missing or invalid)"
+            npm install
+          fi
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
