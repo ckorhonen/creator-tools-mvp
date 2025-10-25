@@ -4,13 +4,13 @@
  */
 
 export interface Env {
-  DB: D1Database;
-  TWITTER_API_KEY: string;
-  TWITTER_API_SECRET: string;
-  LINKEDIN_CLIENT_ID: string;
-  LINKEDIN_CLIENT_SECRET: string;
-  INSTAGRAM_APP_ID: string;
-  INSTAGRAM_APP_SECRET: string;
+  DB?: D1Database; // Optional to allow deployment without database
+  TWITTER_API_KEY?: string;
+  TWITTER_API_SECRET?: string;
+  LINKEDIN_CLIENT_ID?: string;
+  LINKEDIN_CLIENT_SECRET?: string;
+  INSTAGRAM_APP_ID?: string;
+  INSTAGRAM_APP_SECRET?: string;
 }
 
 export default {
@@ -32,19 +32,31 @@ export default {
     try {
       // Health check
       if (path === '/health') {
-        return jsonResponse({ status: 'ok', timestamp: new Date().toISOString() }, corsHeaders);
+        return jsonResponse({ 
+          status: 'ok', 
+          timestamp: new Date().toISOString(),
+          database: env.DB ? 'configured' : 'not configured'
+        }, corsHeaders);
+      }
+
+      // Check if database is configured for endpoints that need it
+      if (!env.DB && path.startsWith('/api/')) {
+        return jsonResponse({ 
+          error: 'Database not configured',
+          message: 'Please configure the D1 database binding. See DEPLOYMENT.md for instructions.'
+        }, corsHeaders, 503);
       }
 
       // Schedule a post
       if (path === '/api/posts' && request.method === 'POST') {
         const post = await request.json();
-        const id = await schedulePost(env.DB, post);
+        const id = await schedulePost(env.DB!, post);
         return jsonResponse({ id, message: 'Post scheduled successfully' }, corsHeaders);
       }
 
       // Get scheduled posts
       if (path === '/api/posts' && request.method === 'GET') {
-        const posts = await getScheduledPosts(env.DB);
+        const posts = await getScheduledPosts(env.DB!);
         return jsonResponse({ posts }, corsHeaders);
       }
 
@@ -57,7 +69,7 @@ export default {
 
       // Get analytics
       if (path === '/api/analytics' && request.method === 'GET') {
-        const analytics = await getAnalytics(env.DB);
+        const analytics = await getAnalytics(env.DB!);
         return jsonResponse({ analytics }, corsHeaders);
       }
 
@@ -83,6 +95,10 @@ export default {
 
   // Cron trigger for publishing scheduled posts
   async scheduled(event: ScheduledEvent, env: Env) {
+    if (!env.DB) {
+      console.log('Skipping scheduled job: database not configured');
+      return;
+    }
     console.log('Running scheduled publish job');
     await processScheduledPosts(env);
   },
@@ -126,6 +142,10 @@ async function getScheduledPosts(db: D1Database): Promise<any[]> {
 }
 
 async function publishPost(env: Env, postId: string): Promise<void> {
+  if (!env.DB) {
+    throw new Error('Database not configured');
+  }
+
   const post = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(postId).first();
   
   if (!post) {
@@ -192,6 +212,11 @@ async function handleOAuthCallback(env: Env, platform: string, params: URLSearch
 }
 
 async function processScheduledPosts(env: Env): Promise<void> {
+  if (!env.DB) {
+    console.log('Database not configured');
+    return;
+  }
+
   const now = new Date().toISOString();
   const posts = await env.DB.prepare(
     'SELECT * FROM posts WHERE status = ? AND scheduled_time <= ?'
