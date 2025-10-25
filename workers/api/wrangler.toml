@@ -3,14 +3,19 @@ main = "src/index.ts"
 compatibility_date = "2024-01-15"
 
 # D1 Database (Optional - configure after first deployment)
+# Uncomment after creating database to enable full functionality
+# 
 # To set up:
 # 1. Run: wrangler d1 create creator_tools_db
-# 2. Copy the database_id from output and paste below
-# 3. Run: wrangler d1 execute creator_tools_db --file=./schema.sql
-[[d1_databases]]
-binding = "DB"
-database_name = "creator_tools_db"
-database_id = "PLACEHOLDER_CONFIGURE_AFTER_DEPLOYMENT" # Replace with actual database ID
+# 2. Copy the database_id from output
+# 3. Uncomment the section below and paste the database_id
+# 4. Run: wrangler d1 execute creator_tools_db --file=./schema.sql
+# 5. Redeploy: wrangler deploy
+#
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "creator_tools_db"
+# database_id = "YOUR_DATABASE_ID_HERE"
 
 # Environment variables (use wrangler secret put for sensitive values)
 [vars]
@@ -25,8 +30,9 @@ ENVIRONMENT = "production"
 # INSTAGRAM_APP_SECRET
 
 # Cron trigger for publishing scheduled posts
-[triggers]
-crons = ["*/5 * * * *"] # Every 5 minutes
+# Uncomment after database is configured
+# [triggers]
+# crons = ["*/5 * * * *"] # Every 5 minutes
 
 # Custom routes (Optional - configure custom domain after deployment)
 # Uncomment and configure these after setting up your custom domain in Cloudflare
