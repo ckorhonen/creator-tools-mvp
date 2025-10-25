@@ -1,6 +1,10 @@
 # Creator Tools MVP
 
-> **✅ DEPLOYMENT FIXED!** The GitHub Actions workflow is now ready to deploy. See [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md) for 5-minute setup instructions.
+> **✅ DEPLOYMENT FIXED & ACTIVE!** 
+> 
+> **Latest Update**: Workflow run #18796969344 failure resolved. New deployment runs triggered with fixed configuration. 
+> 
+> See **[QUICK_FIX_SUMMARY.md](./QUICK_FIX_SUMMARY.md)** for latest status or [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md) for 5-minute setup.
 
 A minimal but polished content scheduling MVP for Twitter/X, LinkedIn, and Instagram with unified analytics. Built with React, TypeScript, and Cloudflare Workers.
 
@@ -21,19 +25,25 @@ A minimal but polished content scheduling MVP for Twitter/X, LinkedIn, and Insta
 
 **New to this project?** Start here:
 
-1. **[DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md)** ⭐ - Deploy in 5 minutes
-2. **[QUICKSTART.md](./QUICKSTART.md)** - Development setup guide
+1. **[QUICK_FIX_SUMMARY.md](./QUICK_FIX_SUMMARY.md)** 🔥 - Latest deployment status
+2. **[DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md)** ⭐ - Deploy in 5 minutes
+3. **[QUICKSTART.md](./QUICKSTART.md)** - Development setup guide
 
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
+| [QUICK_FIX_SUMMARY.md](./QUICK_FIX_SUMMARY.md) | **LATEST** - Current deployment status and fixes ✅ |
 | [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md) | **START HERE** - Deploy with minimal configuration (5 min) |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Complete deployment guide for Cloudflare |
 | [FEATURES.md](./FEATURES.md) | Detailed feature documentation |
 | [QUICKSTART.md](./QUICKSTART.md) | Local development setup |
 | [PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md) | Project overview and architecture |
 | [SCREENSHOTS.md](./SCREENSHOTS.md) | Visual guide with screenshots |
+
+### Recent Deployment Fixes
+- [DEPLOYMENT_RUN_18796969344_ANALYSIS.md](./DEPLOYMENT_RUN_18796969344_ANALYSIS.md) - Analysis of run #18796969344
+- [DEPLOYMENT_RUN_18796969344_RESOLUTION.md](./DEPLOYMENT_RUN_18796969344_RESOLUTION.md) - Resolution steps
 
 ## 🏗️ Architecture
 
@@ -223,7 +233,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🐛 Issues & Support
 
-- **Deployment Issues?** See [DEPLOYMENT_QUICK_START.md](./DEPLOYMENT_QUICK_START.md)
+- **Deployment Issues?** See [QUICK_FIX_SUMMARY.md](./QUICK_FIX_SUMMARY.md)
 - **Bug Reports:** [Open an issue](https://github.com/ckorhonen/creator-tools-mvp/issues)
 - **Questions:** [Start a discussion](https://github.com/ckorhonen/creator-tools-mvp/discussions)
 
