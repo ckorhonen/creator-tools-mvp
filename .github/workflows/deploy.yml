@@ -20,12 +20,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          # Removed cache: 'npm' since we don't have package-lock.json at root
+          node-version: '20'
+          # No cache configuration for root - package-lock.json not tracked
 
       - name: Install dependencies
-        run: npm install
-
+        run: |
+          # Use npm install since package-lock.json might not be committed
+          npm install
+        
       - name: Build
         run: npm run build
         env:
@@ -35,6 +37,11 @@ jobs:
           VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID || '' }}
           VITE_INSTAGRAM_APP_ID: ${{ secrets.VITE_INSTAGRAM_APP_ID || '' }}
 
+      - name: Verify build output
+        run: |
+          echo "Checking dist directory..."
+          ls -la dist/ || echo "⚠️  dist directory not found"
+          
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
@@ -57,13 +64,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          # Workers API has package-lock.json, so we can use cache
+          node-version: '20'
+          # Enable cache for Workers API which has package-lock.json
           cache: 'npm'
           cache-dependency-path: 'workers/api/package-lock.json'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Verify wrangler.toml
+        run: |
+          echo "Checking wrangler.toml configuration..."
+          cat wrangler.toml
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
