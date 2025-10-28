@@ -24,13 +24,39 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "Installing frontend dependencies..."
-          npm install
+          echo "📦 Installing frontend dependencies..."
+          npm install --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
+        
+      - name: Verify installation
+        run: |
+          echo "🔍 Verifying node_modules..."
+          if [ ! -d "node_modules" ]; then
+            echo "❌ Error: node_modules directory not found"
+            exit 1
+          fi
+          echo "✅ node_modules exists"
+          
+          echo "🔍 Verifying critical dependencies..."
+          for pkg in react vite typescript @types/node; do
+            if [ ! -d "node_modules/$pkg" ]; then
+              echo "❌ Error: Required package '$pkg' not found"
+              exit 1
+            fi
+          done
+          echo "✅ All critical dependencies verified"
+          
+      - name: Type check
+        run: |
+          echo "🔍 Running TypeScript type checking..."
+          npm run type-check
+          echo "✅ Type check passed"
         
       - name: Build
         run: |
-          echo "Building frontend..."
+          echo "🏗️ Building frontend..."
           npm run build
+          echo "✅ Build completed"
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://creator-tools-api.ckorhonen.workers.dev' }}
           VITE_TWITTER_CLIENT_ID: ${{ secrets.VITE_TWITTER_CLIENT_ID || '' }}
@@ -39,13 +65,21 @@ jobs:
 
       - name: Verify build output
         run: |
-          echo "Checking dist directory..."
+          echo "📂 Checking dist directory..."
           if [ ! -d "dist" ]; then
             echo "❌ Error: dist directory not found after build"
             exit 1
           fi
-          ls -la dist/
-          echo "✅ Build output verified"
+          echo "✅ Build output verified:"
+          ls -lah dist/
+          du -sh dist/
+          
+          echo "🔍 Checking for critical files..."
+          if [ ! -f "dist/index.html" ]; then
+            echo "❌ Error: index.html not found in dist"
+            exit 1
+          fi
+          echo "✅ All critical files present"
           
       - name: Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
@@ -74,18 +108,70 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "Installing Workers API dependencies..."
-          npm install
+          echo "📦 Installing Workers API dependencies..."
+          npm install --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
 
-      - name: Verify wrangler.toml
+      - name: Verify installation
         run: |
-          echo "Checking wrangler.toml configuration..."
+          echo "🔍 Verifying node_modules..."
+          if [ ! -d "node_modules" ]; then
+            echo "❌ Error: node_modules directory not found"
+            exit 1
+          fi
+          echo "✅ node_modules exists"
+          
+          echo "🔍 Checking for wrangler..."
+          if [ ! -f "node_modules/.bin/wrangler" ]; then
+            echo "❌ Error: wrangler not found in node_modules"
+            exit 1
+          fi
+          echo "✅ wrangler found"
+          
+          echo "🔍 Checking for TypeScript..."
+          if [ ! -d "node_modules/typescript" ]; then
+            echo "❌ Error: typescript not found in node_modules"
+            exit 1
+          fi
+          echo "✅ TypeScript found"
+          
+          echo "🔍 Checking for @cloudflare/workers-types..."
+          if [ ! -d "node_modules/@cloudflare/workers-types" ]; then
+            echo "❌ Error: @cloudflare/workers-types not found in node_modules"
+            exit 1
+          fi
+          echo "✅ @cloudflare/workers-types found"
+
+      - name: Verify configuration files
+        run: |
+          echo "📋 Checking wrangler.toml configuration..."
           if [ ! -f "wrangler.toml" ]; then
             echo "❌ Error: wrangler.toml not found"
             exit 1
           fi
+          echo "✅ wrangler.toml found:"
           cat wrangler.toml
-          echo "✅ wrangler.toml found"
+          echo ""
+          
+          echo "📋 Checking TypeScript configuration..."
+          if [ ! -f "tsconfig.json" ]; then
+            echo "❌ Error: tsconfig.json not found"
+            exit 1
+          fi
+          echo "✅ tsconfig.json found"
+          
+          echo "📋 Checking TypeScript source..."
+          if [ ! -f "src/index.ts" ]; then
+            echo "❌ Error: src/index.ts not found"
+            exit 1
+          fi
+          echo "✅ src/index.ts exists"
+
+      - name: Validate with dry-run
+        run: |
+          echo "🔍 Validating Workers configuration (dry-run)..."
+          npx wrangler deploy --dry-run --outdir=dist
+          echo "✅ Configuration validation passed"
 
       - name: Deploy to Cloudflare Workers
         if: github.event_name != 'pull_request'
