@@ -1,0 +1,107 @@
+name: Generate Complete Lock Files
+
+on:
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  generate-lockfiles:
+    runs-on: ubuntu-latest
+    name: Generate Complete package-lock.json Files
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/complete-package-lock-files
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Remove incomplete root lock file
+        run: |
+          if [ -f "package-lock.json" ]; then
+            echo "Removing incomplete package-lock.json..."
+            rm package-lock.json
+          fi
+
+      - name: Generate complete root lock file
+        run: |
+          echo "Generating complete package-lock.json with all dependencies..."
+          npm install
+          
+          # Verify it's complete
+          if grep -q "\"resolved\":" package-lock.json; then
+            RESOLVED_COUNT=$(grep -c "\"resolved\":" package-lock.json)
+            echo "✅ Generated complete lock file with $RESOLVED_COUNT resolved packages"
+          else
+            echo "❌ Lock file appears incomplete!"
+            exit 1
+          fi
+
+      - name: Remove incomplete workers lock file
+        run: |
+          cd workers/api
+          if [ -f "package-lock.json" ]; then
+            echo "Removing incomplete package-lock.json..."
+            rm package-lock.json
+          fi
+
+      - name: Generate complete workers lock file
+        run: |
+          cd workers/api
+          echo "Generating complete package-lock.json with all dependencies..."
+          npm install
+          
+          # Verify it's complete
+          if grep -q "\"resolved\":" package-lock.json; then
+            RESOLVED_COUNT=$(grep -c "\"resolved\":" package-lock.json)
+            echo "✅ Generated complete lock file with $RESOLVED_COUNT resolved packages"
+          else
+            echo "❌ Lock file appears incomplete!"
+            exit 1
+          fi
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push lock files
+        run: |
+          git add package-lock.json workers/api/package-lock.json
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Generate complete package-lock.json files with all dependencies
+            
+            - Generated complete root package-lock.json with full dependency tree
+            - Generated complete workers/api/package-lock.json with full dependency tree
+            - Includes all resolved URLs, integrity hashes, and transitive dependencies
+            - Enables fast and reliable npm ci in GitHub Actions workflow
+            
+            Fixes deployment issues in run #18796970740"
+            
+            git push
+            echo "✅ Lock files committed and pushed!"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## ✅ Lock Files Generated Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Complete package-lock.json files have been generated and committed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Root package-lock.json" >> $GITHUB_STEP_SUMMARY
+          ROOT_COUNT=$(grep -c "\"resolved\":" package-lock.json || echo "0")
+          echo "- Resolved packages: $ROOT_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Workers API package-lock.json" >> $GITHUB_STEP_SUMMARY
+          WORKERS_COUNT=$(grep -c "\"resolved\":" workers/api/package-lock.json || echo "0")
+          echo "- Resolved packages: $WORKERS_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Create a pull request from \`fix/complete-package-lock-files\` to \`main\`" >> $GITHUB_STEP_SUMMARY
+          echo "2. Wait for CI checks to pass" >> $GITHUB_STEP_SUMMARY
+          echo "3. Merge the PR to fix the deployment issues" >> $GITHUB_STEP_SUMMARY
