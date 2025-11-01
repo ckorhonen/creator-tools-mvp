@@ -22,33 +22,122 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: 🔍 Validate Cloudflare Secrets
+        if: github.event_name != 'pull_request'
         run: |
-          echo "Installing frontend dependencies..."
-          npm install
-        
-      - name: Build
+          echo "Checking required Cloudflare secrets..."
+          MISSING_SECRETS=false
+          
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ CLOUDFLARE_API_TOKEN is not configured"
+            MISSING_SECRETS=true
+          else
+            echo "✅ CLOUDFLARE_API_TOKEN is configured"
+          fi
+          
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ CLOUDFLARE_ACCOUNT_ID is not configured"
+            MISSING_SECRETS=true
+          else
+            echo "✅ CLOUDFLARE_ACCOUNT_ID is configured"
+          fi
+          
+          if [ "$MISSING_SECRETS" = true ]; then
+            echo ""
+            echo "⚠️  DEPLOYMENT BLOCKED: Missing required secrets"
+            echo ""
+            echo "To configure secrets:"
+            echo "1. Visit: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "2. Add CLOUDFLARE_API_TOKEN (from https://dash.cloudflare.com/profile/api-tokens)"
+            echo "3. Add CLOUDFLARE_ACCOUNT_ID (from https://dash.cloudflare.com sidebar)"
+            echo ""
+            echo "See DEPLOYMENT_FIX_RUN_18797029840.md for detailed instructions"
+            exit 1
+          fi
+          
+          echo "✅ All required secrets are configured"
+
+      - name: 📦 Install dependencies
         run: |
-          echo "Building frontend..."
+          echo "📦 Installing frontend dependencies..."
+          npm install --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
+
+      - name: 🔍 Verify critical dependencies
+        run: |
+          echo "🔍 Verifying critical dependencies..."
+          MISSING_DEPS=false
+          
+          if [ ! -d "node_modules/react" ]; then
+            echo "❌ react is not installed"
+            MISSING_DEPS=true
+          fi
+          
+          if [ ! -d "node_modules/vite" ]; then
+            echo "❌ vite is not installed"
+            MISSING_DEPS=true
+          fi
+          
+          if [ ! -d "node_modules/typescript" ]; then
+            echo "❌ typescript is not installed"
+            MISSING_DEPS=true
+          fi
+          
+          if [ ! -d "node_modules/@types/node" ]; then
+            echo "❌ @types/node is not installed"
+            MISSING_DEPS=true
+          fi
+          
+          if [ "$MISSING_DEPS" = true ]; then
+            echo "❌ Some critical dependencies are missing"
+            echo "Run: npm install"
+            exit 1
+          fi
+          
+          echo "✅ All critical dependencies verified"
+
+      - name: 🔎 TypeScript type check
+        run: |
+          echo "🔎 Running TypeScript type check..."
+          npm run type-check
+          echo "✅ TypeScript type check passed"
+
+      - name: 🏗️ Build
+        run: |
+          echo "🏗️  Building frontend..."
           npm run build
+          echo "✅ Build completed successfully"
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'https://creator-tools-api.ckorhonen.workers.dev' }}
           VITE_TWITTER_CLIENT_ID: ${{ secrets.VITE_TWITTER_CLIENT_ID || '' }}
           VITE_LINKEDIN_CLIENT_ID: ${{ secrets.VITE_LINKEDIN_CLIENT_ID || '' }}
           VITE_INSTAGRAM_APP_ID: ${{ secrets.VITE_INSTAGRAM_APP_ID || '' }}
 
-      - name: Verify build output
+      - name: 🔍 Verify build output
         run: |
-          echo "Checking dist directory..."
+          echo "🔍 Verifying build output..."
+          
           if [ ! -d "dist" ]; then
             echo "❌ Error: dist directory not found after build"
             exit 1
           fi
-          ls -la dist/
-          echo "✅ Build output verified"
           
-      - name: Deploy to Cloudflare Pages
+          if [ ! -f "dist/index.html" ]; then
+            echo "❌ Error: dist/index.html not found"
+            echo "Build may have failed silently"
+            exit 1
+          fi
+          
+          echo "📁 Build output:"
+          ls -lah dist/
+          echo ""
+          echo "📊 Build size:"
+          du -sh dist/
+          echo "✅ Build output verified successfully"
+
+      - name: 🚀 Deploy to Cloudflare Pages
         if: github.event_name != 'pull_request'
+        id: deploy-pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -56,6 +145,19 @@ jobs:
           projectName: creator-tools-mvp
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Deployment Summary
+        if: github.event_name != 'pull_request' && success()
+        run: |
+          echo "# ✅ Frontend Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Project:** creator-tools-mvp" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**🌐 Frontend URL:** https://creator-tools-mvp.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Deployment completed at $(date)_" >> $GITHUB_STEP_SUMMARY
 
   deploy-workers:
     runs-on: ubuntu-latest
@@ -72,25 +174,127 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: 🔍 Validate Cloudflare Secrets
+        if: github.event_name != 'pull_request'
         run: |
-          echo "Installing Workers API dependencies..."
-          npm install
+          echo "Checking required Cloudflare secrets..."
+          MISSING_SECRETS=false
+          
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ CLOUDFLARE_API_TOKEN is not configured"
+            MISSING_SECRETS=true
+          else
+            echo "✅ CLOUDFLARE_API_TOKEN is configured"
+          fi
+          
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ CLOUDFLARE_ACCOUNT_ID is not configured"
+            MISSING_SECRETS=true
+          else
+            echo "✅ CLOUDFLARE_ACCOUNT_ID is configured"
+          fi
+          
+          if [ "$MISSING_SECRETS" = true ]; then
+            echo ""
+            echo "⚠️  DEPLOYMENT BLOCKED: Missing required secrets"
+            echo ""
+            echo "To configure secrets:"
+            echo "1. Visit: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            echo "2. Add CLOUDFLARE_API_TOKEN (from https://dash.cloudflare.com/profile/api-tokens)"
+            echo "3. Add CLOUDFLARE_ACCOUNT_ID (from https://dash.cloudflare.com sidebar)"
+            echo ""
+            echo "See DEPLOYMENT_FIX_RUN_18797029840.md for detailed instructions"
+            exit 1
+          fi
+          
+          echo "✅ All required secrets are configured"
 
-      - name: Verify wrangler.toml
+      - name: 📦 Install dependencies
         run: |
-          echo "Checking wrangler.toml configuration..."
+          echo "📦 Installing Workers API dependencies..."
+          npm install --prefer-offline --no-audit
+          echo "✅ Dependencies installed successfully"
+
+      - name: 🔍 Verify critical dependencies
+        run: |
+          echo "🔍 Verifying critical dependencies..."
+          MISSING_DEPS=false
+          
+          if [ ! -d "node_modules/wrangler" ]; then
+            echo "❌ wrangler is not installed"
+            MISSING_DEPS=true
+          fi
+          
+          if [ ! -d "node_modules/typescript" ]; then
+            echo "❌ typescript is not installed"
+            MISSING_DEPS=true
+          fi
+          
+          if [ ! -d "node_modules/@cloudflare/workers-types" ]; then
+            echo "❌ @cloudflare/workers-types is not installed"
+            MISSING_DEPS=true
+          fi
+          
+          if [ "$MISSING_DEPS" = true ]; then
+            echo "❌ Some critical dependencies are missing"
+            echo "Run: cd workers/api && npm install"
+            exit 1
+          fi
+          
+          echo "✅ All critical dependencies verified"
+
+      - name: 🔍 Validate configuration files
+        run: |
+          echo "🔍 Validating Workers configuration..."
+          
           if [ ! -f "wrangler.toml" ]; then
             echo "❌ Error: wrangler.toml not found"
             exit 1
           fi
-          cat wrangler.toml
           echo "✅ wrangler.toml found"
+          
+          if [ ! -f "tsconfig.json" ]; then
+            echo "❌ Error: tsconfig.json not found"
+            exit 1
+          fi
+          echo "✅ tsconfig.json found"
+          
+          if [ ! -f "src/index.ts" ]; then
+            echo "❌ Error: src/index.ts not found"
+            exit 1
+          fi
+          echo "✅ src/index.ts found"
+          
+          echo ""
+          echo "📄 wrangler.toml contents:"
+          cat wrangler.toml
+          echo ""
+          echo "✅ Configuration files validated"
 
-      - name: Deploy to Cloudflare Workers
+      - name: 🔎 Dry-run deployment validation
+        run: |
+          echo "🔎 Running wrangler dry-run validation..."
+          npx wrangler deploy --dry-run
+          echo "✅ Wrangler configuration is valid"
+
+      - name: 🚀 Deploy to Cloudflare Workers
         if: github.event_name != 'pull_request'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: workers/api
+
+      - name: 📝 Deployment Summary
+        if: github.event_name != 'pull_request' && success()
+        run: |
+          echo "# ✅ Workers API Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Worker:** creator-tools-api" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**🌐 API URL:** https://creator-tools-api.ckorhonen.workers.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**🏥 Health Check:** https://creator-tools-api.ckorhonen.workers.dev/health" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Deployment completed at $(date)_" >> $GITHUB_STEP_SUMMARY
